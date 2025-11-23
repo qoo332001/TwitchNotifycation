@@ -1,0 +1,13 @@
+{
+  "name": "twitch-line-monitor",
+  "version": "1.0.0",
+  "description": "A web service to monitor Twitch stream status and send notifications via Line Bot.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "express": "^4.19.2"
+  }
+}
