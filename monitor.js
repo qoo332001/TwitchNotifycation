@@ -16,8 +16,10 @@ const STREAMERS_TO_MONITOR = ['guanweiboy'];
 let TWITCH_ACCESS_TOKEN = null;
 
 // --- 輔助函式：LINE 廣播 ---
-async function sendLineNotification(streamerLogin, streamTitle) {
-    const message = `\n🚨 實況主 ${streamerLogin} 開台了！ 🚨\n標題: ${streamTitle}\n連結: https://twitch.tv/${streamerLogin}`;
+// 🚨 修正：新增 displayName 參數，用於內文顯示；streamerLogin 用於連結。
+async function sendLineNotification(streamerLogin, streamTitle, displayName = streamerLogin) {
+    // 實況主名稱使用 displayName (中文/大小寫)，連結使用 streamerLogin (英文登入名)
+    const message = `\n🚨 實況主 ${displayName} 開台了！ 🚨\n標題: ${streamTitle}\n連結: https://twitch.tv/${streamerLogin}`;
     
     const payload = {
         messages: [{
@@ -47,7 +49,7 @@ async function sendLineNotification(streamerLogin, streamTitle) {
     }
 }
 
-// --- 輔助函式：Twitch 權杖獲取 ---
+// --- 輔助函式：Twitch 權杖獲取 (保持不變) ---
 async function getAccessToken() {
     if (TWITCH_ACCESS_TOKEN) return TWITCH_ACCESS_TOKEN; // 避免重複獲取
     
@@ -132,7 +134,8 @@ async function runMonitor(forceNotify = false) {
                 }
 
                 if (shouldNotify) {
-                    await sendLineNotification(liveData.user_name, liveData.title);
+                    // 🚨 修正：傳入 liveData.user_name 作為顯示名稱
+                    await sendLineNotification(streamerLogin, liveData.title, liveData.user_name);
                     notificationSent = true;
                 }
                 
