@@ -1,10 +1,24 @@
 // monitor.js
 
 const axios = require('axios');
+const fs = require('fs');
+const STATE_FILE = './stream_state.json';
+
+function loadState() {
+    if (fs.existsSync(STATE_FILE)) {
+        return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+    }
+    return {};
+}
+
+function saveState(state) {
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state), 'utf8');
+}
+
 
 // 🚨 模擬狀態持久化：在實際部署中，這個變數會因為伺服器重啟而重置。
 // 建議使用 Redis 或 Cloudflare KV 進行狀態持久化。
-const GLOBAL_LAST_STATE = {}; 
+let GLOBAL_LAST_STATE = loadState();
 
 // --- 配置區 (使用您的值) ---
 const TWITCH_CLIENT_ID = 'nnxm2shk3p3k7iri5etuh3hbej1wdk';
@@ -154,6 +168,7 @@ async function runMonitor(forceNotify = false) {
         }
         
         log.push(`--- 輪詢檢查結束 ---`);
+        saveState(GLOBAL_LAST_STATE);
         return { success: true, log: log, notificationSent: notificationSent, currentState: GLOBAL_LAST_STATE };
 
     } catch (error) {
