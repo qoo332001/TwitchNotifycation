@@ -6,14 +6,11 @@ const { runMonitor, getGlobalState } = require('./monitor'); // 引入核心邏�
 const app = express();
 const PORT = process.env.PORT || 8080; // Render 使用 PORT 環境變數
 
-// 定義一個用於 Cloudflare Cron Job 呼叫的檢查端點
+// 定義 Cloudflare Cron Job 呼叫的檢查端點
 app.get('/check', async (req, res) => {
     console.log(`[Endpoint /check] 接收到 Cron Job 請求...`);
     
-    // 執行核心監控邏輯 (不強制通知)
-    const result = await runMonitor(false); 
-    
-    // 輸出日誌到 Render Console
+    const result = await runMonitor(false);  // 不強制通知
     result.log.forEach(line => console.log(line));
     
     if (result.success) {
@@ -31,13 +28,11 @@ app.get('/check', async (req, res) => {
     }
 });
 
-// 定義一個手動檢查並強制通知的端點
+// 定義手動檢查並強制通知的端點
 app.get('/status', async (req, res) => {
     console.log(`[Endpoint /status] 接收到手動檢查請求...`);
 
-    // 執行核心監控邏輯 (強制通知，確保 LINE Bot 能收到測試訊息)
-    const result = await runMonitor(true); 
-    
+    const result = await runMonitor(true); // 強制通知
     result.log.forEach(line => console.log(line));
 
     if (result.success) {
@@ -61,4 +56,15 @@ app.listen(PORT, () => {
     console.log(`🚀 服務已啟動，監聽 Port ${PORT}`);
     console.log(`- Cron Job Endpoint: /check`);
     console.log(`- Manual Status Endpoint: /status`);
+
+    // 🔸 這裡加：啟動時先跑一次檢查
+    runMonitor(false)   // false = 不強制通知，只在狀態改變時才通知
+        .then(result => {
+            console.log('🟢 啟動後首次檢查完成');
+            result.log.forEach(line => console.log(line));
+            console.log('目前記錄狀態:', getGlobalState());
+        })
+        .catch(err => {
+            console.error('🔴 啟動後首次檢查失敗:', err.message || err);
+        });
 });
