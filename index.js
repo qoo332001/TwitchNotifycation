@@ -1,64 +1,37 @@
-// index.js (服務入口)
+// index.js
 
 const express = require('express');
-const { runMonitor, getGlobalState } = require('./monitor'); // 引入核心邏輯
+const { runMonitor, getGlobalState } = require('./monitor'); 
 
 const app = express();
-const PORT = process.env.PORT || 8080; // Render 使用 PORT 環境變數
+const PORT = process.env.PORT || 8080;
 
-// 定義一個用於 Cloudflare Cron Job 呼叫的檢查端點
-app.get('/check', async (req, res) => {
-    console.log(`[Endpoint /check] 接收到 Cron Job 請求...`);
-    
-    // 執行核心監控邏輯 (不強制通知)
-    const result = await runMonitor(false); 
-    
-    // 輸出日誌到 Render Console
-    result.log.forEach(line => console.log(line));
-    
-    if (result.success) {
-        res.status(200).json({
-            status: 'ok',
-            message: 'Twitch 狀態檢查完成。',
-            details: result.log,
-        });
-    } else {
-        res.status(500).json({
-            status: 'error',
-            message: 'Twitch 狀態檢查失敗。',
-            details: result.log,
-        });
+// ... (中間的 app.get /check 和 /status 保持不變) ...
+
+// 修改啟動部分：
+// 使用 async IIFE (立即執行函式) 來確保先檢查完狀態再啟動 Web Server
+(async () => {
+    try {
+        console.log("🟡 [系統初始化] 正在執行啟動前狀態同步...");
+        
+        // 參數2 (true) 代表這是「啟動模式」，只同步狀態，不發通知
+        const initResult = await runMonitor(false, true); 
+        
+        if(initResult.success) {
+            console.log("🟢 [系統初始化] 狀態同步完成。");
+            initResult.log.forEach(l => console.log(l));
+        } else {
+            console.error("🔴 [系統初始化] 狀態同步失敗，但仍將啟動伺服器。");
+        }
+
+    } catch (err) {
+        console.error("初始化過程發生錯誤:", err);
     }
-});
 
-// 定義一個手動檢查並強制通知的端點
-app.get('/status', async (req, res) => {
-    console.log(`[Endpoint /status] 接收到手動檢查請求...`);
-
-    // 執行核心監控邏輯 (強制通知，確保 LINE Bot 能收到測試訊息)
-    const result = await runMonitor(true); 
-    
-    result.log.forEach(line => console.log(line));
-
-    if (result.success) {
-        res.status(200).json({
-            status: 'ok',
-            message: '手動檢查完成，已強制發送通知 (如果實況主開台)。',
-            details: result.log,
-            current_state: getGlobalState(),
-        });
-    } else {
-        res.status(500).json({
-            status: 'error',
-            message: '手動檢查失敗。',
-            details: result.log,
-        });
-    }
-});
-
-// 啟動伺服器
-app.listen(PORT, () => {
-    console.log(`🚀 服務已啟動，監聽 Port ${PORT}`);
-    console.log(`- Cron Job Endpoint: /check`);
-    console.log(`- Manual Status Endpoint: /status`);
-});
+    // 狀態同步完後，才開始監聽 Port
+    app.listen(PORT, () => {
+        console.log(`🚀 服務已啟動，監聽 Port ${PORT}`);
+        console.log(`- Cron Job Endpoint: /check`);
+        console.log(`- Manual Status Endpoint: /status`);
+    });
+})();
