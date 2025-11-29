@@ -58,7 +58,7 @@ app.listen(PORT, () => {
     console.log(`- Manual Status Endpoint: /status`);
 
     // 🔸 這裡加：啟動時先跑一次檢查
-    runMonitor(false)   // false = 不強制通知，只在狀態改變時才通知
+    runMonitor(false, true)   // false = 不強制通知；true = silent 啟動版，只更新狀態不發通知
         .then(result => {
             console.log('🟢 啟動後首次檢查完成');
             result.log.forEach(line => console.log(line));

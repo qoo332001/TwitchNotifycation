@@ -90,7 +90,7 @@ async function getAccessToken() {
  * @param {boolean} forceNotify - 是否忽略狀態直接強制通知（用於 /status endpoint）
  * @returns {object} 檢查結果
  */
-async function runMonitor(forceNotify = false) {
+async function runMonitor(forceNotify = false, silent = false) {
     const currentTime = new Date().toLocaleTimeString('zh-TW', { hour12: false });
     const log = [];
     let notificationSent = false;
@@ -148,9 +148,13 @@ async function runMonitor(forceNotify = false) {
                 }
 
                 if (shouldNotify) {
-                    // 🚨 修正：傳入 liveData.user_name 作為顯示名稱
-                    await sendLineNotification(streamerLogin, liveData.title, liveData.user_name);
-                    notificationSent = true;
+                    if (!silent) {
+                        // 🚨 修正：傳入 liveData.user_name 作為顯示名稱
+                        await sendLineNotification(streamerLogin, liveData.title, liveData.user_name);
+                        notificationSent = true;
+                    }else{
+                        log.push("      (silent 模式：不發送通知，只更新狀態)");
+                    }
                 }
                 
                 // 更新狀態
